@@ -31,8 +31,8 @@ validation with `just try-age`.
 
 ## Phase 3: User Story 2 - Modules (P2)
 
-- [x] T008 [US2] `programs.windows-fido-bridge.age.{enable,package}` in
-  `nix/modules/nixos/windows-fido-bridge.nix` and `nix/modules/home/windows-fido-bridge.nix`
+- [x] T008 [US2] `programs.wsl-fido-bridge.age.{enable,package}` in
+  `nix/modules/nixos/wsl-fido-bridge.nix` and `nix/modules/home/wsl-fido-bridge.nix`
 - [x] T009 [US2] Extend `nix/checks/nixos-module.nix`
 
 ## Phase 4: Polish

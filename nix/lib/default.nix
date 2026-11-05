@@ -36,7 +36,7 @@ rec {
     commonArgs pkgs
     // windowsCrossArgs pkgs
     // {
-      pname = "windows-fido-bridge-exe";
+      pname = "wsl-fido-bridge-exe";
       cargoExtraArgs = "--locked --package webauthn-bridge";
     };
 

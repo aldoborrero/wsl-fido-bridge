@@ -49,7 +49,7 @@ to that key's recipient.
 
 ### User Story 2 - Enable it declaratively (Priority: P2)
 
-On a NixOS-WSL host or with home-manager, setting `programs.windows-fido-bridge.age.enable` puts
+On a NixOS-WSL host or with home-manager, setting `programs.wsl-fido-bridge.age.enable` puts
 the shim on `PATH`, ahead of any Linux `age-plugin-yubikey`.
 
 **Independent Test**: `nix flake check` evaluates the NixOS module with the option set.
@@ -73,7 +73,7 @@ the shim on `PATH`, ahead of any Linux `age-plugin-yubikey`.
   returning its exit status.
 - **FR-003**: The executable MUST live in the same Nix output as the shim.
 - **FR-004**: The shim MUST forward `RUST_LOG` (the plugin's log filter) to Windows via `WSLENV`.
-- **FR-005**: The NixOS and home-manager modules MUST offer `programs.windows-fido-bridge.age.enable`
+- **FR-005**: The NixOS and home-manager modules MUST offer `programs.wsl-fido-bridge.age.enable`
   (and `age.package`), independent of `enable`, that put the shim on `PATH` with high priority.
 - **FR-006**: PIN entry and touch/insert prompts MUST go through the age plugin protocol
   (`request-secret`, `confirm`, `msg`) so the WSL client handles them; nothing in the decrypt

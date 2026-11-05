@@ -18,7 +18,7 @@ use std::process::ExitCode;
 
 #[cfg(not(windows))]
 fn main() -> ExitCode {
-    eprintln!("windowsfidobridge: this executable only runs on Windows");
+    eprintln!("wslfidobridge: this executable only runs on Windows");
     ExitCode::FAILURE
 }
 
@@ -90,7 +90,7 @@ mod bridge {
     }
 
     fn uv_required(application: &str, flags: u8) -> bool {
-        let force = std::env::var_os("WINDOWS_FIDO_BRIDGE_FORCE_USER_VERIFICATION").is_some();
+        let force = wfb_protocol::env::is_set(wfb_protocol::env::FORCE_USER_VERIFICATION);
         let required = convert::user_verification_required(application, flags, force);
         debug!("User verification required: {required}");
         required

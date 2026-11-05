@@ -1,7 +1,7 @@
 //! OpenSSH security key middleware (`SSH_SK_PROVIDER`).
 //!
 //! Implements the C ABI from OpenSSH's `sk-api.h` and forwards each request to
-//! `windowsfidobridge.exe`, which must sit next to this library.
+//! `wslfidobridge.exe`, which must sit next to this library.
 
 mod bridge;
 mod ffi;
@@ -222,7 +222,7 @@ mod tests {
 
     #[test]
     fn sign_without_bridge_fails_cleanly() {
-        // The test binary has no windowsfidobridge.exe next to it.
+        // The test binary has no wslfidobridge.exe next to it.
         let mut out: *mut SkSignResponse = ptr::null_mut();
         // SAFETY: NULL inputs with zero lengths are allowed; `out` is a valid out-pointer.
         let code = unsafe {

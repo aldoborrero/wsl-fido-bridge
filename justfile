@@ -1,4 +1,4 @@
-# windows-fido-bridge
+# wsl-fido-bridge
 
 # Upstream C++ implementation the rewrite follows (socram8888 fork, SK API v10).
 upstream_url := "https://github.com/socram8888/windows-fido-bridge"
@@ -26,7 +26,7 @@ check:
 
 # Build the middleware library and the Windows executable into ./result/lib
 build:
-    nix build .#windows-fido-bridge --log-format bar-with-logs
+    nix build .#wsl-fido-bridge --log-format bar-with-logs
 
 # Build the Windows executable with cargo (devshell provides the mingw linker)
 build-exe:
@@ -35,7 +35,7 @@ build-exe:
 # Sign a test message through the bridge; the key must be attached to Windows, not WSL
 try-sign key="~/.ssh/id_ed25519_sk_5c-github": build
     mkdir -p target && echo hola > target/msg && rm -f target/msg.sig
-    SSH_AUTH_SOCK= ssh-keygen -w "$PWD/result/lib/libwindowsfidobridge.so" -Y sign -n git -f {{ key }} target/msg
+    SSH_AUTH_SOCK= ssh-keygen -w "$PWD/result/lib/libwslfidobridge.so" -Y sign -n git -f {{ key }} target/msg
     ssh-keygen -Y check-novalidate -n git -f {{ key }}.pub -s target/msg.sig < target/msg
 
 # Decrypt a test file with the YubiKey (PIV) attached to Windows via the age plugin (PIN/touch per key policy)

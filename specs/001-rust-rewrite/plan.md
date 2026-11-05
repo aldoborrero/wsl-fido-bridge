@@ -7,9 +7,9 @@
 ## Summary
 
 Reimplement the upstream C++ OpenSSH security key middleware in Rust with identical observable
-behaviour: a Linux `cdylib` (`libwindowsfidobridge.so`) implementing the `sk-api.h` v10 C ABI
+behaviour: a Linux `cdylib` (`libwslfidobridge.so`) implementing the `sk-api.h` v10 C ABI
 forwards each enroll/sign request, as length-prefixed CBOR over stdin/stdout, to a Windows
-executable (`windowsfidobridge.exe`, cross-compiled) that calls the Windows WebAuthn API and
+executable (`wslfidobridge.exe`, cross-compiled) that calls the Windows WebAuthn API and
 converts its results into OpenSSH's formats. A small shared crate holds the wire types, framing,
 `sk-api` constants and logging; all conversion logic is platform-independent and unit-tested on
 Linux, with golden fixtures captured from the upstream build. See [research.md](research.md).
@@ -83,13 +83,13 @@ crates/
 │   ├── src/sk.rs               # sk-api.h constants the bridge uses
 │   ├── src/message.rs          # Request/EnrollParams/SignParams/SkOption/Response/EnrollResult/SignResult (serde)
 │   ├── src/frame.rs            # "<len>|<payload>" read/write over io::Read/Write, 32768 limit
-│   ├── src/log.rs              # WINDOWS_FIDO_BRIDGE_DEBUG-gated stderr logger + hex dump
+│   ├── src/log.rs              # WSL_FIDO_BRIDGE_DEBUG-gated stderr logger + hex dump
 │   └── tests/fixtures/         # golden fixtures from upstream (see README)
-├── sk-middleware/              # cdylib `windowsfidobridge` → libwindowsfidobridge.so
+├── sk-middleware/              # cdylib `wslfidobridge` → libwslfidobridge.so
 │   ├── src/lib.rs              # extern "C" sk_api_version/sk_enroll/sk_sign/sk_load_resident_keys
 │   ├── src/ffi.rs              # #[repr(C)] structs, C-string/option parsing, calloc'd buffers + guard
 │   └── src/bridge.rs           # locate exe via dladdr, WSLENV, spawn, frame exchange, exit status
-└── webauthn-bridge/            # bin `windowsfidobridge` → windowsfidobridge.exe
+└── webauthn-bridge/            # bin `wslfidobridge` → wslfidobridge.exe
     ├── src/main.rs             # read request, dispatch, write response (cfg(windows)); stub elsewhere
     ├── src/convert.rs          # authdata, COSE key, attestation object, DER ECDSA → OpenSSH (no unsafe, tested on Linux)
     ├── src/webauthn.rs         # #[cfg(windows)] MakeCredential / GetAssertion via windows-sys
@@ -97,7 +97,7 @@ crates/
 nix/
 ├── checks/clippy.nix           # existing
 ├── checks/tests.nix            # NEW: crane cargoTest --workspace (runs bridge conversion tests on Linux)
-└── packages/windows-fido-bridge/package.nix  # existing: .so + .exe into $out/lib
+└── packages/wsl-fido-bridge/package.nix  # existing: .so + .exe into $out/lib
 ```
 
 **Structure Decision**: keep the scaffold's two deliverable crates and add one shared library
@@ -116,12 +116,12 @@ package layout and the exe-next-to-.so contract are unchanged.
   `window::run(|hwnd| webauthn::get_assertion(...))` → `convert::*` → `Response` →
   `frame::write(stdout)` → exit 0. Rust std handles are binary (no `_setmode` needed). Unknown
   `request_type` → log + non-zero exit (upstream aborts).
-- **User verification**: required iff env `WINDOWS_FIDO_BRIDGE_FORCE_USER_VERIFICATION` is set,
+- **User verification**: required iff env `WSL_FIDO_BRIDGE_FORCE_USER_VERIFICATION` is set,
   or application == `ssh:windows-fido-bridge-verify-required`, or `flags & 0x04`; otherwise
   discouraged.
 - **WebAuthn parameters**: RP id = application (UTF-16); client data = challenge/data bytes with
   hash alg `SHA-256`; credential list = the single key handle; enrollment user id `(null)`, user
-  name = `user` option or `SSH user`, RP name `OpenSSH via windows-fido-bridge`; COSE alg -7
+  name = `user` option or `SSH user`, RP name `OpenSSH via wsl-fido-bridge`; COSE alg -7
   (ECDSA) / -8 (Ed25519).
 - **Release profile**: keep `panic = "unwind"` (needed by `catch_unwind` in the cdylib); the exe
   links statically against the mingw runtime (no extra DLLs; verified in the scaffold).
