@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Rust rewrite of windows-fido-bridge reaching parity with the C++ implementation: sk_api_version/sk_enroll/sk_sign/sk_load_resident_keys over the CBOR stdin/stdout protocol to windowsfidobridge.exe via WSL interop; Ed25519 and ECDSA P-256; PIN / user-verification flags; debug logging via WINDOWS_FIDO_BRIDGE_DEBUG and WINDOWS_FIDO_BRIDGE_FORCE_USER_VERIFICATION; existing credentials enrolled via libfido2 must keep working."
+**Input**: User description: "Rust rewrite of windows-fido-bridge reaching parity with the C++ implementation: sk_api_version/sk_enroll/sk_sign/sk_load_resident_keys over the CBOR stdin/stdout protocol to wslfidobridge.exe via WSL interop; Ed25519 and ECDSA P-256; PIN / user-verification flags; debug logging via WSL_FIDO_BRIDGE_DEBUG and WSL_FIDO_BRIDGE_FORCE_USER_VERIFICATION; existing credentials enrolled via libfido2 must keep working."
 
 ## Context
 
@@ -80,24 +80,24 @@ with it via Story 1 produces a verifying signature.
 
 ### User Story 3 - Diagnose problems and force user verification (Priority: P3)
 
-When something fails, the developer sets `WINDOWS_FIDO_BRIDGE_DEBUG` and gets detailed logs on
+When something fails, the developer sets `WSL_FIDO_BRIDGE_DEBUG` and gets detailed logs on
 standard error from both the WSL and Windows sides (parameters received, messages exchanged,
-parsed authenticator data). Setting `WINDOWS_FIDO_BRIDGE_FORCE_USER_VERIFICATION` makes every
+parsed authenticator data). Setting `WSL_FIDO_BRIDGE_FORCE_USER_VERIFICATION` makes every
 operation require user verification regardless of OpenSSH flags.
 
 **Why this priority**: Operational support; the bridge works without it.
 
-**Independent Test**: Run `just try-sign` with `WINDOWS_FIDO_BRIDGE_DEBUG=1` and observe debug
-lines from both sides; run with `WINDOWS_FIDO_BRIDGE_FORCE_USER_VERIFICATION=1` and observe the
+**Independent Test**: Run `just try-sign` with `WSL_FIDO_BRIDGE_DEBUG=1` and observe debug
+lines from both sides; run with `WSL_FIDO_BRIDGE_FORCE_USER_VERIFICATION=1` and observe the
 PIN/biometric prompt.
 
 **Acceptance Scenarios**:
 
-1. **Given** `WINDOWS_FIDO_BRIDGE_DEBUG` is set to any value, **When** an operation runs,
+1. **Given** `WSL_FIDO_BRIDGE_DEBUG` is set to any value, **When** an operation runs,
    **Then** both sides emit debug output to standard error and never print the PIN value.
 2. **Given** the variable is unset, **When** an operation runs, **Then** only warnings and
    errors are printed.
-3. **Given** `WINDOWS_FIDO_BRIDGE_FORCE_USER_VERIFICATION` is set, or the application is
+3. **Given** `WSL_FIDO_BRIDGE_FORCE_USER_VERIFICATION` is set, or the application is
    `ssh:windows-fido-bridge-verify-required`, **When** signing or enrolling, **Then** user
    verification is required.
 
@@ -137,7 +137,7 @@ PIN/biometric prompt.
 - **FR-004**: Loading resident keys MUST return "unsupported", as upstream. Any non-zero answer
   from the Windows side MUST be reported to OpenSSH as a general error, as upstream.
 - **FR-005**: Each operation MUST be forwarded to a Windows executable named
-  `windowsfidobridge.exe` located in the same directory as the middleware library, started
+  `wslfidobridge.exe` located in the same directory as the middleware library, started
   through WSL interop, exchanging exactly one request and one response.
 - **FR-006**: Request and response messages MUST use the upstream wire format: a decimal ASCII
   length followed by `|` and that many bytes of CBOR, with the upstream field names and types
@@ -146,14 +146,14 @@ PIN/biometric prompt.
   using the OpenSSH application string as relying-party identifier and the OpenSSH data as the
   client data hashed with SHA-256, so credentials enrolled through libfido2 keep working.
 - **FR-008**: User verification MUST be required when OpenSSH sets the
-  user-verification-required flag, when `WINDOWS_FIDO_BRIDGE_FORCE_USER_VERIFICATION` is set,
+  user-verification-required flag, when `WSL_FIDO_BRIDGE_FORCE_USER_VERIFICATION` is set,
   or when the application is `ssh:windows-fido-bridge-verify-required`; otherwise it MUST be
   discouraged.
 - **FR-009**: The WebAuthn prompts MUST appear in front of other windows (upstream uses an
   invisible always-on-top owner window), including when started from Windows Terminal.
-- **FR-010**: `WINDOWS_FIDO_BRIDGE_DEBUG` and `WINDOWS_FIDO_BRIDGE_FORCE_USER_VERIFICATION`
+- **FR-010**: `WSL_FIDO_BRIDGE_DEBUG` and `WSL_FIDO_BRIDGE_FORCE_USER_VERIFICATION`
   MUST be propagated from WSL to the Windows process (via `WSLENV`, preserving existing entries).
-- **FR-011**: Debug logging MUST be enabled by `WINDOWS_FIDO_BRIDGE_DEBUG` (any value), go to
+- **FR-011**: Debug logging MUST be enabled by `WSL_FIDO_BRIDGE_DEBUG` (any value), go to
   standard error, and default to warnings and errors only; PIN values MUST never be logged.
 - **FR-012**: Any failure (bad input, missing executable, malformed message, WebAuthn error,
   cancellation) MUST be reported to OpenSSH as an error code; the middleware MUST NOT crash,
@@ -199,8 +199,9 @@ PIN/biometric prompt.
 - `sk_options` are forwarded; only `user` has an effect (enrollment user name), as upstream.
 - Enrollment authenticator data returned to OpenSSH stays empty, as upstream; filling it is a
   possible later improvement, not part of parity.
-- The upstream "user id" placeholder `(null)` and relying-party name
-  `OpenSSH via windows-fido-bridge` are kept for enrollment.
+- The upstream "user id" placeholder `(null)` is kept for enrollment. The relying-party name is
+  `OpenSSH via wsl-fido-bridge` since the 0.2.0 rename (upstream: `OpenSSH via
+  windows-fido-bridge`); it is a display name only, so existing credentials are unaffected.
 - Enrollment returns the request flags as `sk_enroll_response.flags` (OpenSSH stores them as the
   key's `sk_flags`, as with its own `sk-usbhid`); upstream returned 0, which dropped
   `verify-required` from new keys. This is an intentional security deviation (research R10).

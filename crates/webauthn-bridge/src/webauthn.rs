@@ -106,7 +106,7 @@ pub fn make_credential(
     let rp = WEBAUTHN_RP_ENTITY_INFORMATION {
         dwVersion: WEBAUTHN_RP_ENTITY_INFORMATION_CURRENT_VERSION,
         pwszId: rp_id.as_ptr(),
-        pwszName: w!("OpenSSH via windows-fido-bridge"),
+        pwszName: w!("OpenSSH via wsl-fido-bridge"),
         pwszIcon: ptr::null(),
     };
     let user_info = WEBAUTHN_USER_ENTITY_INFORMATION {

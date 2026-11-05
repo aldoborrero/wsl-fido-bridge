@@ -10,7 +10,7 @@ Sync Impact Report
 - Follow-up TODOs: none
 -->
 
-# windows-fido-bridge Constitution
+# wsl-fido-bridge Constitution
 
 ## Core Principles
 
@@ -23,10 +23,16 @@ feature spec with its reason. Parity covers:
 - the CBOR request/response wire format between the Linux library and the Windows executable;
 - the conversion of WebAuthn results into OpenSSH `sk_enroll_response` / `sk_sign_response`;
 - the OpenSSH security key API version (`SSH_SK_VERSION_MAJOR` = `0x000a0000`, OpenSSH ≥ 9.1);
-- the deployment contract: `windowsfidobridge.exe` lives in the same directory as
-  `libwindowsfidobridge.so`, which locates it through its own path;
+- the deployment contract: `wslfidobridge.exe` lives in the same directory as
+  `libwslfidobridge.so`, which locates it through its own path;
 - the debug and behaviour switches `WINDOWS_FIDO_BRIDGE_DEBUG` and
-  `WINDOWS_FIDO_BRIDGE_FORCE_USER_VERIFICATION`.
+  `WINDOWS_FIDO_BRIDGE_FORCE_USER_VERIFICATION` (since the 0.2.0 rename the `WSL_FIDO_BRIDGE_*`
+  names are preferred and the upstream names stay accepted).
+
+The 0.2.0 rename to wsl-fido-bridge is a recorded deviation in naming only: the files are
+`libwslfidobridge.so` and `wslfidobridge.exe` (upstream: `libwindowsfidobridge.so`,
+`windowsfidobridge.exe`), still in one directory, and the relying-party name is
+`OpenSSH via wsl-fido-bridge`.
 
 Rationale: the C++ is proven against the user's real keys; parity lets existing credentials keep
 working and gives every behaviour question a single, checkable answer.
@@ -79,8 +85,8 @@ consumes the package.
 ## Technical Constraints
 
 - Targets: Linux library for WSL 2 (`x86_64-unknown-linux-gnu`, `cdylib` named
-  `windowsfidobridge`) and Windows executable (`x86_64-pc-windows-gnu`, binary
-  `windowsfidobridge.exe`).
+  `wslfidobridge`) and Windows executable (`x86_64-pc-windows-gnu`, binary
+  `wslfidobridge.exe`).
 - Supported algorithms: Ed25519 and ECDSA P-256, as upstream.
 - Licence: Apache-2.0, with upstream attribution kept in `NOTICE`.
 

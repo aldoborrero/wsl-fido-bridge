@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="560" viewBox="0 0 1600 560" role="img" aria-labelledby="title desc">
-  <title id="title">windows-fido-bridge — sign with the FIDO key on Windows, from OpenSSH in WSL</title>
-  <desc id="desc">ssh, git and ssh-agent in WSL load libwindowsfidobridge.so through SSH_SK_PROVIDER. It starts windowsfidobridge.exe through WSL interop, which asks Windows WebAuthn for the signature; Windows prompts for a touch on the security key, which never leaves Windows.</desc>
+  <title id="title">wsl-fido-bridge — sign with the FIDO key on Windows, from OpenSSH in WSL</title>
+  <desc id="desc">ssh, git and ssh-agent in WSL load libwslfidobridge.so through SSH_SK_PROVIDER. It starts wslfidobridge.exe through WSL interop, which asks Windows WebAuthn for the signature; Windows prompts for a touch on the security key, which never leaves Windows.</desc>
   <defs>
     <marker id="arrow" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="userSpaceOnUse">
       <path d="M1 1 L9 6 L1 11" fill="none" stroke="#5b6570" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
@@ -29,7 +29,7 @@
 
   <g font-family="DejaVu Sans, Arial, Helvetica, sans-serif" fill="#20252b">
     <!-- header -->
-    <text x="64" y="104" font-size="58" font-weight="700">windows-fido-bridge</text>
+    <text x="64" y="104" font-size="58" font-weight="700">wsl-fido-bridge</text>
     <text x="64" y="156" font-size="28" fill="#5b6570">Sign with the FIDO key on Windows, from OpenSSH in WSL. No USB passthrough.</text>
     <path d="M64 196 H1536" stroke="#dce2e8" stroke-width="2"/>
 
@@ -55,12 +55,12 @@
       <text x="199" y="424" font-size="22" fill="#5b6570">ed25519-sk · ecdsa-sk</text>
 
       <!-- 2. the middleware -->
-      <text x="564" y="342" font-size="21" font-weight="700" fill="#294f82">libwindowsfidobridge.so</text>
+      <text x="564" y="342" font-size="21" font-weight="700" fill="#294f82">libwslfidobridge.so</text>
       <text x="564" y="388" font-size="22" fill="#5b6570">SSH_SK_PROVIDER</text>
       <text x="564" y="424" font-size="22" fill="#5b6570">sk-api v10</text>
 
       <!-- 3. the Windows half -->
-      <text x="1036" y="342" font-size="21" font-weight="700" fill="#294f82">windowsfidobridge.exe</text>
+      <text x="1036" y="342" font-size="21" font-weight="700" fill="#294f82">wslfidobridge.exe</text>
       <text x="1036" y="388" font-size="22" fill="#5b6570">webauthn.dll</text>
       <text x="1036" y="424" font-size="22" fill="#5b6570">Windows asks for a touch</text>
 

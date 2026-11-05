@@ -6,10 +6,10 @@
 
 Cross-compile the upstream `age-plugin-yubikey` (str4d, tag `v0.5.1`) to
 `x86_64-pc-windows-gnu` with the crane and mingw-w64 setup that already builds
-`windowsfidobridge.exe`, and wrap it in a one-line Linux shim of the same name that `exec`s the
+`wslfidobridge.exe`, and wrap it in a one-line Linux shim of the same name that `exec`s the
 `.exe` through WSL interop. A new package `age-plugin-yubikey-wsl` holds both
 (`bin/age-plugin-yubikey`, `lib/age-plugin-yubikey.exe`); both modules gain
-`programs.windows-fido-bridge.age.{enable,package}`.
+`programs.wsl-fido-bridge.age.{enable,package}`.
 
 No Rust is added to this workspace: the plugin already speaks the age plugin protocol over
 stdin/stdout and reaches the YubiKey with WinSCard on Windows; WSL interop already relays a
@@ -86,7 +86,7 @@ between processes is to be observed with `just try-age` run twice.
 ```text
 nix/lib/default.nix                       windowsCrossArgs: shared Windows crane args
 nix/packages/age-plugin-yubikey-wsl/      package.nix (exe + shim), shim.sh, default.nix
-nix/modules/{nixos,home}/windows-fido-bridge.nix   age.enable / age.package
+nix/modules/{nixos,home}/wsl-fido-bridge.nix   age.enable / age.package
 nix/checks/age-shim.nix                   shim passthrough test
 nix/checks/nixos-module.nix               asserts the shim is in systemPackages with high priority
 justfile                                  try-age

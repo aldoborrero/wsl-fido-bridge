@@ -1,7 +1,7 @@
 # Contract: OpenSSH security key middleware C ABI (API v10)
 
 Source of truth: OpenSSH `sk-api.h` (identical to upstream `common/3p-include/sk-api-v10.h`
-modulo a `HAVE_STDINT_H` guard). Exported by `libwindowsfidobridge.so` with C linkage.
+modulo a `HAVE_STDINT_H` guard). Exported by `libwslfidobridge.so` with C linkage.
 
 ## Constants
 

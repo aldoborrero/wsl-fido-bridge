@@ -78,8 +78,8 @@ Phase 0 output for [plan.md](plan.md). Every decision cites the upstream behavio
 - **Decision**: `std::process::Command` with `stdin`/`stdout` piped and `stderr` inherited;
   set `WSLENV` to the existing value plus
   `WINDOWS_FIDO_BRIDGE_DEBUG:WINDOWS_FIDO_BRIDGE_FORCE_USER_VERIFICATION` (colon-joined, as
-  upstream); executable path = directory of the library (via `dladdr`) +
-  `windowsfidobridge.exe`; wait for exit and treat non-zero status as failure.
+  upstream; since the 0.2.0 rename also the `WSL_FIDO_BRIDGE_*` names); executable path = directory of the library (via `dladdr`) +
+  `wslfidobridge.exe`; wait for exit and treat non-zero status as failure.
 - **Rationale**: same observable behaviour as upstream's `fork`/`dup2`/`execl`, without unsafe
   process code. Running a `.exe` from a Linux path works through WSL interop (verified with the
   C++ build on 2026-10-16).
@@ -87,7 +87,7 @@ Phase 0 output for [plan.md](plan.md). Every decision cites the upstream behavio
 
 ## R7. Logging
 
-- **Decision**: a ~20-line module in `wfb-protocol`: level from `WINDOWS_FIDO_BRIDGE_DEBUG`
+- **Decision**: a ~20-line module in `wfb-protocol`: level from `WSL_FIDO_BRIDGE_DEBUG`
   (set → debug, unset → warn), output `[<timestamp>] [<side>] [<level>] message` to stderr,
   plus a hex-dump helper in upstream's `  | 0000: …` layout. No logging crate.
 - **Rationale**: principle III; upstream's spdlog usage is limited to these two levels and the
@@ -119,7 +119,7 @@ Phase 0 output for [plan.md](plan.md). Every decision cites the upstream behavio
 
 - PIN from OpenSSH is never sent to Windows.
 - `authdata` stays empty on enrollment.
-- Enrollment user id placeholder `(null)`, RP name `OpenSSH via windows-fido-bridge`,
+- Enrollment user id placeholder `(null)`, RP name `OpenSSH via wsl-fido-bridge`,
   default user name `SSH user`, `user` option overrides it.
 - `ssh:windows-fido-bridge-verify-required` application forces user verification.
 - Frame header parse rejects sizes > 32768 bytes.
@@ -232,7 +232,7 @@ Every intentional behaviour difference; valid upstream traffic behaves identical
   (`packed`/`fido-u2f`, with/without `x5c`, with extension data) and attested-credential
   authenticator data. They follow the WebAuthn/COSE specifications and upstream's parser rules;
   replace them with captures when an `ecdsa-sk` sign and an enrollment are run with
-  `WINDOWS_FIDO_BRIDGE_DEBUG=1`.
+  `WSL_FIDO_BRIDGE_DEBUG=1`.
 - No-panic loops (xorshift, fixed seeds) feed random and mutated inputs to `frame::read`,
   `message::decode`, `AuthenticatorData::parse`, `ecdsa_signature`, `cose_public_key` and
   `parse_attestation`.
@@ -240,7 +240,7 @@ Every intentional behaviour difference; valid upstream traffic behaves identical
 ## R14. `--list-serials`: an additive extension beyond upstream
 
 - **Why**: gfh maps YubiKey serials to SSH keys. Under WSL the keys stay attached to Windows, so
-  gfh cannot see them over HID or PC/SC in Linux; it runs `windowsfidobridge.exe --list-serials`
+  gfh cannot see them over HID or PC/SC in Linux; it runs `wslfidobridge.exe --list-serials`
   (next to `$SSH_SK_PROVIDER`) through WSL interop instead. Upstream has no such mode, and
   without the flag the executable behaves exactly as before (Principle I is unaffected).
 - **Contract**: stdout carries only the serials of the YubiKeys attached to Windows, one decimal

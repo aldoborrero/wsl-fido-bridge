@@ -6,10 +6,11 @@ library works with the C++ `.exe` and vice versa.
 
 ## Transport
 
-- Linux library spawns `<dir of libwindowsfidobridge.so>/windowsfidobridge.exe` (no arguments)
+- Linux library spawns `<dir of libwslfidobridge.so>/wslfidobridge.exe` (no arguments)
   through WSL interop.
 - Environment: `WSLENV` = previous value (if any) + `:`-joined
-  `WINDOWS_FIDO_BRIDGE_DEBUG:WINDOWS_FIDO_BRIDGE_FORCE_USER_VERIFICATION`.
+  `WSL_FIDO_BRIDGE_DEBUG:WINDOWS_FIDO_BRIDGE_DEBUG:WSL_FIDO_BRIDGE_FORCE_USER_VERIFICATION:WINDOWS_FIDO_BRIDGE_FORCE_USER_VERIFICATION`
+  (upstream forwards only the `WINDOWS_FIDO_BRIDGE_*` names; both are read since 0.2.0).
 - Exactly one request frame on the child's stdin, one response frame on its stdout. stderr is
   passed through (logs). The child MUST exit 0 after writing the response; non-zero exit →
   general error on the Linux side.

@@ -34,7 +34,7 @@ runCommand "age-plugin-yubikey-wsl-${version}"
 
     meta = {
       description = "age-plugin-yubikey for WSL, running the Windows build against YubiKeys attached to Windows";
-      homepage = "https://github.com/aldoborrero/windows-fido-bridge";
+      homepage = "https://github.com/aldoborrero/wsl-fido-bridge";
       license = with lib.licenses; [
         asl20
         mit

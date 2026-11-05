@@ -1,5 +1,5 @@
-//! Minimal stderr logger: debug when `WINDOWS_FIDO_BRIDGE_DEBUG` is set (any value), otherwise
-//! warnings and errors only (upstream `common/src/util.cpp: set_up_logger`).
+//! Minimal stderr logger: debug when [`env::DEBUG`](crate::env::DEBUG) is set (any value),
+//! otherwise warnings and errors only (upstream `common/src/util.cpp: set_up_logger`).
 
 use std::fmt::{self, Write as _};
 use std::io::Write as _;
@@ -11,7 +11,7 @@ static SIDE: OnceLock<(&'static str, bool)> = OnceLock::new();
 /// Severity of a log line.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Level {
-    /// Written only when `WINDOWS_FIDO_BRIDGE_DEBUG` is set.
+    /// Written only when `WSL_FIDO_BRIDGE_DEBUG` is set.
     Debug,
     /// Always written.
     Warn,
@@ -21,11 +21,11 @@ pub enum Level {
 
 /// Sets the side name shown in every line (`linux-middleware`, `win32-bridge`); first call wins.
 pub fn init(side: &'static str) {
-    let debug = std::env::var_os("WINDOWS_FIDO_BRIDGE_DEBUG").is_some();
+    let debug = crate::env::is_set(crate::env::DEBUG);
     _ = SIDE.set((side, debug));
 }
 
-/// Whether debug lines are written (`WINDOWS_FIDO_BRIDGE_DEBUG` was set at [`init`]).
+/// Whether debug lines are written (`WSL_FIDO_BRIDGE_DEBUG` was set at [`init`]).
 pub fn debug_enabled() -> bool {
     SIDE.get().is_some_and(|&(_, debug)| debug)
 }
@@ -35,7 +35,7 @@ pub fn write(level: Level, args: fmt::Arguments) {
     if level == Level::Debug && !debug_enabled() {
         return;
     }
-    let side = SIDE.get().map_or("windows-fido-bridge", |&(side, _)| side);
+    let side = SIDE.get().map_or("wsl-fido-bridge", |&(side, _)| side);
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default();

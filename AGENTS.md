@@ -1,15 +1,15 @@
 # AGENTS.md
 
-Rust rewrite of windows-fido-bridge: an OpenSSH security key middleware that lets OpenSSH in WSL sign with a FIDO key attached to Windows, via the Windows WebAuthn API.
+wsl-fido-bridge (named windows-fido-bridge until 0.2.0), a Rust rewrite of the C++ windows-fido-bridge: an OpenSSH security key middleware that lets OpenSSH in WSL sign with a FIDO key attached to Windows, via the Windows WebAuthn API.
 
 ## Layout
 
 | Path | What |
 | --- | --- |
-| `crates/protocol/` | lib `wfb-protocol`: `sk-api.h` constants, CBOR messages (`message.rs`), length-prefixed framing (`frame.rs`), stderr logger; golden fixtures (only copy, provenance in its README) in `tests/fixtures/` |
-| `crates/sk-middleware/` | `cdylib` → `libwindowsfidobridge.so`; C ABI from OpenSSH `sk-api.h` (API v10): `lib.rs` entry points, `ffi.rs` structs + calloc, `bridge.rs` spawns the exe |
-| `crates/webauthn-bridge/` | bin → `windowsfidobridge.exe` (x86_64-pc-windows-gnu); `convert.rs` (WebAuthn → OpenSSH, tested on Linux), `serial.rs` (`--list-serials` APDUs and parsing, tested on Linux), `webauthn.rs` + `window.rs` + `pcsc.rs` (Windows only) |
-| `nix/` | blueprint prefix: `devshell.nix`, `formatter.nix`, `modules/{nixos,home}/windows-fido-bridge.nix` (set `SSH_SK_PROVIDER` + ssh-agent `-P`; `age.enable` puts the age plugin shim on `PATH`), `lib/` (toolchain, crane args incl. `windowsCrossArgs`, and the shared Linux/Windows `-deps` builds), `packages/` (`windows-fido-bridge`; `age-plugin-yubikey-wsl` = upstream plugin built for Windows + `shim.sh`), `checks/` (`clippy.nix`, `clippy-windows.nix` = Windows-target clippy, `tests.nix` = `cargo test --workspace`, the only Rust test run, `age-shim.nix` = shim passthrough against a stand-in `.exe`, `nixos-module.nix` = module eval check) |
+| `crates/protocol/` | lib `wfb-protocol`: `sk-api.h` constants, CBOR messages (`message.rs`), length-prefixed framing (`frame.rs`), environment switches (`env.rs`), stderr logger; golden fixtures (only copy, provenance in its README) in `tests/fixtures/` |
+| `crates/sk-middleware/` | `cdylib` → `libwslfidobridge.so`; C ABI from OpenSSH `sk-api.h` (API v10): `lib.rs` entry points, `ffi.rs` structs + calloc, `bridge.rs` spawns the exe |
+| `crates/webauthn-bridge/` | bin → `wslfidobridge.exe` (x86_64-pc-windows-gnu); `convert.rs` (WebAuthn → OpenSSH, tested on Linux), `serial.rs` (`--list-serials` APDUs and parsing, tested on Linux), `webauthn.rs` + `window.rs` + `pcsc.rs` (Windows only) |
+| `nix/` | blueprint prefix: `devshell.nix`, `formatter.nix`, `modules/{nixos,home}/wsl-fido-bridge.nix` (`windows-fido-bridge.nix` = pre-0.2.0 alias; set `SSH_SK_PROVIDER` + ssh-agent `-P`; `age.enable` puts the age plugin shim on `PATH`), `lib/` (toolchain, crane args incl. `windowsCrossArgs`, and the shared Linux/Windows `-deps` builds), `packages/` (`wsl-fido-bridge`, `windows-fido-bridge` = pre-0.2.0 alias; `age-plugin-yubikey-wsl` = upstream plugin built for Windows + `shim.sh`), `checks/` (`clippy.nix`, `clippy-windows.nix` = Windows-target clippy, `tests.nix` = `cargo test --workspace`, the only Rust test run, `age-shim.nix` = shim passthrough against a stand-in `.exe`, `nixos-module.nix` = module eval check) |
 | `rust-toolchain.toml` | single source of truth for the Rust toolchain, pinned to an exact release (devshell and Nix builds) |
 | `specs/`, `.specify/` | Spec Kit specs, plans and tasks |
 | `.scratch/windows-fido-bridge-cpp/` | C++ reference at the pinned commit (`just upstream`), gitignored |
@@ -43,7 +43,8 @@ Feature `001-rust-rewrite`: spec, plan, contracts and dependency-ordered tasks i
 - Windows binaries cannot run in the build sandbox: the exe build has `doCheck = false`; put testable logic in code that also compiles for Linux (`convert.rs`, `wfb-protocol`).
 - `windows-sys` links DLLs via raw-dylib, so the exe build needs mingw's `dlltool` on `PATH` (`nativeBuildInputs` in `package.nix`; the devshell has it).
 - Flakes see only tracked files: `git add` new files before any `nix` command.
-- `windowsfidobridge.exe --list-serials` (used by gfh) is an addition beyond upstream (research R14): YubiKey serials on stdout, one decimal per line, exit 0 even when none; it must not read stdin or show UI. Keep that output contract.
+- Renamed from windows-fido-bridge in 0.2.0. Environment switches are `WSL_FIDO_BRIDGE_*`, and the older `WINDOWS_FIDO_BRIDGE_*` names (also upstream's) stay accepted and forwarded (`env.rs`); the `ssh:windows-fido-bridge-verify-required` application and the `.scratch/windows-fido-bridge-cpp` upstream clone keep their names. The old Nix names (`programs.windows-fido-bridge`, `{nixos,home}Modules.windows-fido-bridge`, `packages.*.windows-fido-bridge`) are aliases; `checks.nixos-module` guards them.
+- `wslfidobridge.exe --list-serials` (used by gfh) is an addition beyond upstream (research R14): YubiKey serials on stdout, one decimal per line, exit 0 even when none; it must not read stdin or show UI. Keep that output contract.
 - Work on features in `.worktrees/<branch>` (`just worktree <branch>`), not on `main` directly.
 - `age-plugin-yubikey-wsl` builds upstream `age-plugin-yubikey` unmodified from a pinned tag (`--locked`, its own `Cargo.lock`); bump `version` and `hash` together in `nix/packages/age-plugin-yubikey-wsl/package.nix`. Its `bin/age-plugin-yubikey` shim `exec`s `lib/age-plugin-yubikey.exe` from the same output: argv, stdin/stdout/stderr and exit status pass through untouched (age's plugin protocol runs over them), only `RUST_LOG` is added to `WSLENV`. `checks.age-shim` guards that contract.
 - age finds plugins only by name on `PATH`, so the modules install the shim with `lib.hiPrio`; a Linux `age-plugin-yubikey` earlier on `PATH` shadows it.

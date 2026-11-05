@@ -21,7 +21,7 @@ keys and DER signatures (see [data-model.md](data-model.md)).
 
 ```bash
 just build
-ls result/lib   # libwindowsfidobridge.so  windowsfidobridge.exe
+ls result/lib   # libwslfidobridge.so  wslfidobridge.exe
 ```
 
 ## 3. Hand the key to Windows
@@ -46,7 +46,7 @@ Good "git" signature with ED25519-SK key SHA256:2/nG8D8+uIQ3+yErEqAPfi/5R07GC6lF
 With diagnostics (User Story 3):
 
 ```bash
-WINDOWS_FIDO_BRIDGE_DEBUG=1 just try-sign
+WSL_FIDO_BRIDGE_DEBUG=1 just try-sign
 ```
 
 Expected: debug lines from `linux-middleware` and `win32-bridge` on stderr, including the sign
@@ -58,9 +58,9 @@ signing failure and returns promptly.
 ## 5. Enroll a new credential (User Story 2)
 
 ```bash
-ssh-keygen -t ed25519-sk -w "$PWD/result/lib/libwindowsfidobridge.so" -f /tmp/wfb-test -N ''
+ssh-keygen -t ed25519-sk -w "$PWD/result/lib/libwslfidobridge.so" -f /tmp/wfb-test -N ''
 just try-sign /tmp/wfb-test
-ssh-keygen -t ecdsa-sk   -w "$PWD/result/lib/libwindowsfidobridge.so" -f /tmp/wfb-test-ecdsa -N ''
+ssh-keygen -t ecdsa-sk   -w "$PWD/result/lib/libwslfidobridge.so" -f /tmp/wfb-test-ecdsa -N ''
 just try-sign /tmp/wfb-test-ecdsa
 ```
 
@@ -68,7 +68,7 @@ Expected: both keys are created after a touch and both signatures verify.
 
 ## 6. Interoperability with upstream (optional, parity)
 
-If you have an upstream C++ build (sources via `just upstream`; built with CMake + mingw), put its `windowsfidobridge.exe`
+If you have an upstream C++ build (sources via `just upstream`; built with CMake + mingw), put its `wslfidobridge.exe`
 next to the Rust `.so` (and vice versa) and repeat step 4. Expected: identical result.
 
 ## 7. Give the key back to WSL (optional)

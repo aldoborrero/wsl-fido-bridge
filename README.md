@@ -1,12 +1,12 @@
 <div align="center">
 
-# windows-fido-bridge
+# wsl-fido-bridge
 
 ### Use the FIDO security key plugged into Windows from OpenSSH in WSL.
 
 **`ssh`, `ssh-agent` and `git` commit signing with `ed25519-sk` / `ecdsa-sk` keys — no USB passthrough.**
 
-[![CI](https://img.shields.io/github/actions/workflow/status/aldoborrero/windows-fido-bridge/ci.yml?style=flat-square&label=CI)](https://github.com/aldoborrero/windows-fido-bridge/actions)
+[![CI](https://img.shields.io/github/actions/workflow/status/aldoborrero/wsl-fido-bridge/ci.yml?style=flat-square&label=CI)](https://github.com/aldoborrero/wsl-fido-bridge/actions)
 [![Rust](https://img.shields.io/badge/Rust-1.99-b7410e?style=flat-square&logo=rust&logoColor=white)](rust-toolchain.toml)
 [![Nix flake](https://img.shields.io/badge/Nix-flake-5277c3?style=flat-square&logo=nixos&logoColor=white)](#nix)
 [![OpenSSH](https://img.shields.io/badge/OpenSSH-%E2%89%A5%209.1-294f82?style=flat-square)](#requirements)
@@ -16,7 +16,7 @@
 
 <br />
 
-<img src="docs/assets/banner.svg" alt="OpenSSH in WSL loads libwindowsfidobridge.so, which starts windowsfidobridge.exe through WSL interop; it asks Windows WebAuthn for the signature and Windows prompts for a touch on the security key" width="100%" />
+<img src="docs/assets/banner.svg" alt="OpenSSH in WSL loads libwslfidobridge.so, which starts wslfidobridge.exe through WSL interop; it asks Windows WebAuthn for the signature and Windows prompts for a touch on the security key" width="100%" />
 
 </div>
 
@@ -24,15 +24,17 @@
 
 Passing a YubiKey into WSL with `usbipd` makes FIDO fragile: `pcscd` and libfido2 fight over the device, signatures time out with `agent refused operation`, and the key disappears from Windows while it is attached.
 
-windows-fido-bridge leaves the key on Windows. OpenSSH in WSL hands each request to the bridge, the bridge asks the Windows WebAuthn API, and Windows shows its own "touch your security key" prompt. Keys you already enrolled with libfido2 keep working — no re-enrollment, nothing to change on GitHub or your servers.
+wsl-fido-bridge leaves the key on Windows. OpenSSH in WSL hands each request to the bridge, the bridge asks the Windows WebAuthn API, and Windows shows its own "touch your security key" prompt. Keys you already enrolled with libfido2 keep working — no re-enrollment, nothing to change on GitHub or your servers.
+
+> Until 0.2.0 this project was called **windows-fido-bridge**, the name of the C++ project it reimplements ([mgbowen/windows-fido-bridge](https://github.com/mgbowen/windows-fido-bridge)). It is now **wsl-fido-bridge**, so the two are not confused and it fits next to the planned wsl-tpm-agent. Coming from 0.1.x? See [Migrating from windows-fido-bridge](#migrating-from-windows-fido-bridge).
 
 ## Quick start
 
 ### Nix
 
 ```bash
-nix build github:aldoborrero/windows-fido-bridge
-export SSH_SK_PROVIDER=$PWD/result/lib/libwindowsfidobridge.so
+nix build github:aldoborrero/wsl-fido-bridge
+export SSH_SK_PROVIDER=$PWD/result/lib/libwslfidobridge.so
 
 ssh-keygen -Y sign -n git -f ~/.ssh/id_ed25519_sk message   # Windows asks for a touch
 ssh -i ~/.ssh/id_ed25519_sk user@host
@@ -42,15 +44,15 @@ ssh -i ~/.ssh/id_ed25519_sk user@host
 
 ```nix
 # flake.nix
-inputs.windows-fido-bridge.url = "github:aldoborrero/windows-fido-bridge";
+inputs.wsl-fido-bridge.url = "github:aldoborrero/wsl-fido-bridge";
 
 # NixOS (e.g. a NixOS-WSL host, with programs.ssh.startAgent)
-imports = [ inputs.windows-fido-bridge.nixosModules.windows-fido-bridge ];
-programs.windows-fido-bridge.enable = true;
+imports = [ inputs.wsl-fido-bridge.nixosModules.wsl-fido-bridge ];
+programs.wsl-fido-bridge.enable = true;
 
 # or home-manager (with services.ssh-agent)
-imports = [ inputs.windows-fido-bridge.homeModules.windows-fido-bridge ];
-programs.windows-fido-bridge.enable = true;
+imports = [ inputs.wsl-fido-bridge.homeModules.wsl-fido-bridge ];
+programs.wsl-fido-bridge.enable = true;
 ```
 
 The module exports `SSH_SK_PROVIDER` and allows the bridge in `ssh-agent` (`-P`). Open a new shell afterwards so it picks up the variable.
@@ -60,12 +62,12 @@ The module exports `SSH_SK_PROVIDER` and allows the bridge in `ssh-agent` (`-P`)
 ```bash
 cargo build --release -p sk-middleware                                         # needs glibc ≥ 2.34
 cargo build --release -p webauthn-bridge --target x86_64-pc-windows-gnu        # needs a mingw-w64 linker
-install -D target/release/libwindowsfidobridge.so ~/.local/lib/wfb/libwindowsfidobridge.so
-install -D target/x86_64-pc-windows-gnu/release/windowsfidobridge.exe ~/.local/lib/wfb/windowsfidobridge.exe
-export SSH_SK_PROVIDER=~/.local/lib/wfb/libwindowsfidobridge.so
+install -D target/release/libwslfidobridge.so ~/.local/lib/wfb/libwslfidobridge.so
+install -D target/x86_64-pc-windows-gnu/release/wslfidobridge.exe ~/.local/lib/wfb/wslfidobridge.exe
+export SSH_SK_PROVIDER=~/.local/lib/wfb/libwslfidobridge.so
 ```
 
-The library always looks for `windowsfidobridge.exe` **next to itself**, so keep the two files together.
+The library always looks for `wslfidobridge.exe` **next to itself**, so keep the two files together.
 
 ## Requirements
 
@@ -80,10 +82,10 @@ It is an [OpenSSH security key middleware](https://github.com/openssh/openssh-po
 
 | Piece | Runs on | Role |
 | --- | --- | --- |
-| `libwindowsfidobridge.so` | WSL (Linux) | Loaded by OpenSSH through `SSH_SK_PROVIDER`; implements `sk-api.h` |
-| `windowsfidobridge.exe` | Windows | Started by the library through WSL interop; calls `webauthn.dll` |
+| `libwslfidobridge.so` | WSL (Linux) | Loaded by OpenSSH through `SSH_SK_PROVIDER`; implements `sk-api.h` |
+| `wslfidobridge.exe` | Windows | Started by the library through WSL interop; calls `webauthn.dll` |
 
-The library sends one CBOR request over the child's stdin and reads one reply from its stdout — the same wire protocol as the [C++ implementation](https://github.com/socram8888/windows-fido-bridge), so either half can be swapped with its upstream counterpart.
+The library sends one CBOR request over the child's stdin and reads one reply from its stdout — the same wire protocol as the [C++ implementation](https://github.com/socram8888/windows-fido-bridge), so either half can be swapped with its upstream counterpart (named `windowsfidobridge.exe` / `libwindowsfidobridge.so` there; the library looks for `wslfidobridge.exe`, so rename an upstream `.exe` when you drop it in).
 
 **Performance:** the WSL → Windows hop costs about 0.1–0.3 s per operation (starting the `.exe` through interop); turning the touch into a signature takes a few milliseconds. The rest is the Windows prompt and your finger.
 
@@ -108,15 +110,15 @@ Enrollment only offers external security keys — Windows will not try to save a
 
 | Environment variable | Effect |
 | --- | --- |
-| `WINDOWS_FIDO_BRIDGE_DEBUG` | any value: debug logs from both halves on stderr (the PIN is never logged) |
-| `WINDOWS_FIDO_BRIDGE_FORCE_USER_VERIFICATION` | any value: always require PIN or biometric verification |
+| `WSL_FIDO_BRIDGE_DEBUG` | any value: debug logs from both halves on stderr (the PIN is never logged) |
+| `WSL_FIDO_BRIDGE_FORCE_USER_VERIFICATION` | any value: always require PIN or biometric verification |
 
-Both are forwarded to Windows through `WSLENV`. Using the application `ssh:windows-fido-bridge-verify-required` (`ssh-keygen -O application=...`) also requires verification for that key.
+The names from before the rename, `WINDOWS_FIDO_BRIDGE_DEBUG` and `WINDOWS_FIDO_BRIDGE_FORCE_USER_VERIFICATION`, still work. All are forwarded to Windows through `WSLENV`. Using the application `ssh:windows-fido-bridge-verify-required` (`ssh-keygen -O application=...`) also requires verification for that key.
 
 List the serial numbers of the YubiKeys attached to Windows — one decimal per line, read over PC/SC, no window and no touch:
 
 ```bash
-"$(dirname "$SSH_SK_PROVIDER")/windowsfidobridge.exe" --list-serials
+"$(dirname "$SSH_SK_PROVIDER")/wslfidobridge.exe" --list-serials
 ```
 
 ## Git commit signing
@@ -136,13 +138,13 @@ With several YubiKeys, [gfh](https://github.com/aldoborrero/gfh) picks the key t
 The same YubiKey can decrypt [age](https://age-encryption.org) files encrypted to its [`age-plugin-yubikey`](https://github.com/str4d/age-plugin-yubikey) recipient (`age1yubikey1…`, a PIV slot) — and so [sops](https://github.com/getsops/sops) files that list it. In WSL the Linux plugin finds no smart card reader (`Could not open YubiKey with serial …`); this flake builds the upstream plugin for Windows, where it reaches the key through the Smart Card service, and puts a shim named `age-plugin-yubikey` on `PATH` that runs it through WSL interop.
 
 ```nix
-programs.windows-fido-bridge.age.enable = true;   # NixOS or home-manager; independent of `enable`
+programs.wsl-fido-bridge.age.enable = true;   # NixOS or home-manager; independent of `enable`
 ```
 
 or, without the modules:
 
 ```bash
-nix build github:aldoborrero/windows-fido-bridge#age-plugin-yubikey-wsl
+nix build github:aldoborrero/wsl-fido-bridge#age-plugin-yubikey-wsl
 export PATH=$PWD/result/bin:$PATH
 ```
 
@@ -163,14 +165,45 @@ The age client asks for the PIV PIN in the WSL terminal (the plugin sends it a `
 
 The shim must come **first** on `PATH`: age has no other way to choose a plugin, and a Linux `age-plugin-yubikey` (for example from `nix-shell -p age-plugin-yubikey`) shadows it. The modules install it with high priority; shells that prepend their own copy need it removed on WSL.
 
+## Migrating from windows-fido-bridge
+
+Version 0.2.0 renames the project from windows-fido-bridge to wsl-fido-bridge. Nothing changes on the key or in your key files: keys enrolled with 0.1.x (or with the C++ project) keep working.
+
+| Before (0.1.x) | Now (0.2.0) | Compatibility |
+| --- | --- | --- |
+| `libwindowsfidobridge.so` | `libwslfidobridge.so` | none: point `SSH_SK_PROVIDER` at the new file |
+| `windowsfidobridge.exe` | `wslfidobridge.exe` | none: the library only looks for the new name next to itself; gfh accepts both |
+| `programs.windows-fido-bridge.*` | `programs.wsl-fido-bridge.*` | old option path still works, with a deprecation warning |
+| `nixosModules.windows-fido-bridge`, `homeModules.windows-fido-bridge` | `nixosModules.wsl-fido-bridge`, `homeModules.wsl-fido-bridge` | old module names still work, with a warning |
+| `packages.<system>.windows-fido-bridge` | `packages.<system>.wsl-fido-bridge` | old attribute is an alias |
+| `WINDOWS_FIDO_BRIDGE_DEBUG`, `WINDOWS_FIDO_BRIDGE_FORCE_USER_VERIFICATION` | `WSL_FIDO_BRIDGE_DEBUG`, `WSL_FIDO_BRIDGE_FORCE_USER_VERIFICATION` | old names still work |
+| `github:aldoborrero/windows-fido-bridge` | `github:aldoborrero/wsl-fido-bridge` | GitHub redirects the old URL |
+
+The application `ssh:windows-fido-bridge-verify-required` keeps its name: it is part of the keys enrolled with it.
+
+To migrate:
+
+1. Rename the flake input and the module and options (`programs.windows-fido-bridge` → `programs.wsl-fido-bridge`), or, without the modules, change `SSH_SK_PROVIDER` to `…/libwslfidobridge.so` and install `wslfidobridge.exe` next to it.
+
+1. Open a new shell so it picks up the new `SSH_SK_PROVIDER`.
+
+1. Re-add keys already loaded in `ssh-agent`: the agent signs with the provider path each key was added with, which still names the old `libwindowsfidobridge.so`. Once the agent runs with the new `-P` allow-list, or the old store path is garbage-collected, signing with those keys fails with `agent refused operation`.
+
+   ```bash
+   ssh-add -D                    # or ssh-add -d ~/.ssh/id_ed25519_sk for one key
+   ssh-add ~/.ssh/id_ed25519_sk  # uses the new 
+   ```
+
+   With the modules the agent is restarted with a new `-P` allow-list on the next login; restart it by hand (`systemctl --user restart ssh-agent`) if you migrate within a session.
+
 ## Troubleshooting
 
 | Symptom | Cause and fix |
 | --- | --- |
 | `agent refused operation` when signing through `ssh-agent` | The agent rejects the provider path. Start it with `-P` covering the library (the NixOS / home-manager modules do this). |
 | Windows asks you to insert a security key although one is plugged in | It is attached to WSL with `usbipd`. Run `usbipd detach --busid <id>` so Windows sees it. |
-| `Couldn't sign message: invalid format` right after pressing Cancel | Expected: OpenSSH reports every bridge failure as a generic error. Run with `WINDOWS_FIDO_BRIDGE_DEBUG=1` to see the Windows `HRESULT`. |
-| `[linux-middleware] [error] …/windowsfidobridge.exe: No such file or directory` | The `.exe` is not next to the `.so` (e.g. `SSH_SK_PROVIDER` points at a symlink of the library alone). |
+| `Couldn't sign message: invalid format` right after pressing Cancel | Expected: OpenSSH reports every bridge failure as a generic error. Run with `WSL_FIDO_BRIDGE_DEBUG=1` to see the Windows `HRESULT`. |
+| `[linux-middleware] [error] …/wslfidobridge.exe: No such file or directory` | The `.exe` is not next to the `.so` (e.g. `SSH_SK_PROVIDER` points at a symlink of the library alone). |
 | `yubikey plugin: Could not open YubiKey with serial …` in WSL | The Linux plugin ran, not the shim: `command -v age-plugin-yubikey` must print the bridge's `bin/age-plugin-yubikey`. Also check the key is attached to Windows and the Smart Card service (`SCardSvr`) runs. |
 | A new shell does not use the bridge | `SSH_SK_PROVIDER` is not exported there; with the modules, log in again or open a new terminal. |
 

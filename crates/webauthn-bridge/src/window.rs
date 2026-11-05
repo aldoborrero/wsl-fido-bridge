@@ -30,7 +30,7 @@ pub fn run<T: Send + 'static>(f: impl FnOnce(HWND) -> T + Send + 'static) -> io:
         CreateWindowExW(
             WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
             w!("STATIC"),
-            w!("windows-fido-bridge"),
+            w!("wsl-fido-bridge"),
             WS_POPUPWINDOW,
             960,
             540,
@@ -117,7 +117,7 @@ fn reparent_to_vs_code(hwnd: HWND) -> bool {
     if path.rsplit('\\').next() != Some("Code.exe") {
         return false;
     }
-    debug!("Reparenting the windows-fido-bridge host window to VS Code.");
+    debug!("Reparenting the wsl-fido-bridge host window to VS Code.");
     // SAFETY: both are valid window handles; `hwnd` belongs to this thread.
     unsafe { !SetParent(hwnd, foreground).is_null() }
 }

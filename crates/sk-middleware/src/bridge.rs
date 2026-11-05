@@ -1,4 +1,4 @@
-//! Runs `windowsfidobridge.exe` (next to this library) and exchanges one framed message with it
+//! Runs `wslfidobridge.exe` (next to this library) and exchanges one framed message with it
 //! (upstream `linux_middleware/src/bridge.cpp`).
 
 use std::ffi::{CStr, OsStr, OsString, c_void};
@@ -8,15 +8,9 @@ use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-use wfb_protocol::{debug, frame, log};
+use wfb_protocol::{debug, env, frame, log};
 
-const EXE_NAME: &str = "windowsfidobridge.exe";
-
-/// Variables forwarded from WSL to the Windows process.
-const FORWARDED_VARS: [&str; 2] = [
-    "WINDOWS_FIDO_BRIDGE_DEBUG",
-    "WINDOWS_FIDO_BRIDGE_FORCE_USER_VERIFICATION",
-];
+const EXE_NAME: &str = "wslfidobridge.exe";
 
 /// Sends `payload` to the Windows bridge and returns its reply.
 pub fn invoke(payload: &[u8]) -> io::Result<Vec<u8>> {
@@ -98,10 +92,10 @@ fn exchange(mut cmd: Command, payload: &[u8]) -> io::Result<Vec<u8>> {
     Ok(reply)
 }
 
-/// The existing `WSLENV` plus the forwarded variables, `:`-separated.
+/// The existing `WSLENV` plus the switches the Windows process reads, `:`-separated.
 fn wslenv_value(existing: Option<OsString>) -> OsString {
     let mut value = existing.unwrap_or_default();
-    for var in FORWARDED_VARS {
+    for var in env::ALL {
         if !value.is_empty() {
             value.push(":");
         }
@@ -134,7 +128,8 @@ fn library_dir() -> io::Result<PathBuf> {
 mod tests {
     use super::*;
 
-    const FORWARDED: &str = "WINDOWS_FIDO_BRIDGE_DEBUG:WINDOWS_FIDO_BRIDGE_FORCE_USER_VERIFICATION";
+    const FORWARDED: &str = "WSL_FIDO_BRIDGE_DEBUG:WINDOWS_FIDO_BRIDGE_DEBUG:\
+        WSL_FIDO_BRIDGE_FORCE_USER_VERIFICATION:WINDOWS_FIDO_BRIDGE_FORCE_USER_VERIFICATION";
 
     #[test]
     fn wslenv_without_existing_value() {
@@ -166,11 +161,11 @@ mod tests {
 
     #[test]
     fn missing_executable_is_an_error() {
-        let err = invoke_exe(Path::new("/nonexistent/windowsfidobridge.exe"), b"x").unwrap_err();
+        let err = invoke_exe(Path::new("/nonexistent/wslfidobridge.exe"), b"x").unwrap_err();
         assert_eq!(err.kind(), io::ErrorKind::NotFound);
         assert!(
             err.to_string()
-                .starts_with("/nonexistent/windowsfidobridge.exe: ")
+                .starts_with("/nonexistent/wslfidobridge.exe: ")
         );
     }
 

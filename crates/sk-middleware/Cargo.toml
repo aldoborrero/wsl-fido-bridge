@@ -7,7 +7,7 @@ license.workspace = true
 repository.workspace = true
 
 [lib]
-name = "windowsfidobridge"
+name = "wslfidobridge"
 crate-type = ["cdylib"]
 
 [dependencies]
